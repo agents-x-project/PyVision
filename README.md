@@ -1,4 +1,22 @@
-# PyVision: Agentic Vision with Dynamic Tooling
+<div align="center">
+
+#  PyVision: Agentic Vision with Dynamic Tooling
+
+
+
+<a href="https://arxiv.org/abs/2506.08011" target="_blank">
+    <img alt="arXiv" src="https://img.shields.io/badge/arXiv-PyVision-red?logo=arxiv" height="18" />
+</a>
+<a href="https://agent-x.space/" target="_blank">
+    <img alt="Website" src="https://img.shields.io/badge/🌎_PyVision-blue.svg" height="18" />
+</a>
+<a href="https://huggingface.co/spaces/Agents-X/PyVision-fully-isolated" target="_blank">
+    <img alt="HF Model: ViGaL" src="https://img.shields.io/badge/%F0%9F%A4%97%20_Demo-PyVision-ffc107?color=ffc107&logoColor=white" height="18" />
+</a>
+
+
+</div>
+
 
 ## Overview
 Multi-modal large language model (MLLM) tool using with pre-defined toolset could limit the application scenarios. To dynamically generate and utilize adaptive tools in diverse scenarios, we propose PyVision, an interactive and multi-turn framework capable of dynamic tool generation with Python code, designed for multi-modal reasoning.
