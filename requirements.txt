@@ -1,0 +1,14 @@
+pydantic==2.10.6
+gradio
+openai
+pillow
+matplotlib
+numpy
+timeout-decorator
+pebble
+regex
+markdown
+pytesseract
+scikit-image
+scipy
+scikit-learn
