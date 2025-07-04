@@ -27,7 +27,7 @@ Instantiate the API config file.
 @article{zhao2025pyvision,
   title={PyVision: Agentic Vision with Dynamic Tooling.},
   author={Zhao, Shitian and zhang, Haoquan and Lin, Shaoheng and Li, Ming and Wu, Qilong and Zhang, Kaipeng and Wei, Chen},
-  url={https://agents-x.space/python-visual-primitive.html},
+  journal={arxiv preprint},
   year={2025},
 }
 ```
