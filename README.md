@@ -1,4 +1,4 @@
-# PyVision: Visual Understanding with Dynamic Tool Generation
+# PyVision: Agentic Vision with Dynamic Tooling
 
 ## Overview
 
