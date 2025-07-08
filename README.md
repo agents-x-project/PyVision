@@ -41,9 +41,15 @@ conda create -n pyvision python=3.10
 conda activate pyvision
 pip install -r requirements.txt
 ```
-Instantiate the API config file.
+
+## 💥Run PyVision
+
+### Setup API Config
+Before running `PyVision`, you need to first setup the API config file, including the key and the base_url. We provide three types of clients: OpenAI, Azure and vLLM.
+
+#### OpenAI Client
 ```bash
-# api_config.json
+# ./api_config_files/api_config_openai.json
 {
     "api_key": [
         "sk-xxx"
@@ -51,14 +57,49 @@ Instantiate the API config file.
     "base_url": "xxx"
 }
 ```
-
-## 💥Run
+#### Azure Client
 ```bash
-python main.py
+# ./api_config_files/api_config_azure.json
+{
+    "api_key": [
+        "sk-xxx"
+    ],
+    "base_url": "xxx"
+}
 ```
-### OpenAI Client
-### Azure Client
-### vLLM Client 
+#### vLLM Client 
+```bash
+# ./api_config_files/api_config_vllm.json
+{
+    "api_key": [
+        "sk-xxx"
+    ],
+    "base_url": "xxx"
+}
+```
+### Run 
+If you have setup the OpenAI API config file, you can run the `run.sh` file.
+```bash
+# openai client
+
+python main.py \
+    --image_path ./test_data/one_image_demo.png \
+    --question "From the information on that advertising board, what is the type of this shop?" \
+    --api_config ./api_config_files/api_config_openai.json \
+    --client_type openai \
+    --prompt_template ./prompt_template/prompt_template_vis.json \
+    --prompt vistool_with_img_info_v2 \
+    --exe_code \
+    --max_tokens 10000 \
+    --temperature 0.6 \
+    --output_dir ./test_data \
+    --save_messages 
+```
+
+
+### Visualization
+After running the **run.sh** file, the generated message is stored at `./test_data/test_message.json`. <br>
+Upload the message file to our hosted visualization HuggingFace space: [visualization demo](https://huggingface.co/spaces/Agents-X/data-view).
 
 ## 📜Citation
 ```bibtex

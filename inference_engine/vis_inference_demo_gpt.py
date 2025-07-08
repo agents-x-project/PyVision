@@ -1,7 +1,6 @@
 # vis_inference_demo_gpt.py
 
 import sys
-# sys.path.append("/mnt/petrelfs/zhaoshitian/TIR-Data-Synthesis")
 import os
 import re
 import json
@@ -15,33 +14,31 @@ import anthropic
 
 def encode_image(image):
     """
-    将PIL.Image对象或图像文件路径转换为base64编码字符串，并获取分辨率信息
+    Convert a PIL.Image object or image file path to base64-encoded string, and get resolution info.
     
-    参数:
-        image: 可以是PIL.Image对象或图像文件路径
-        
-    返回:
-        包含以下键的字典:
-        - 'base64': base64编码的字符串
-        - 'width': 图片宽度(像素)
-        - 'height': 图片高度(像素)
-        - 'resolution': 字符串形式的"宽度x高度"
+    Args:
+        image: Can be a PIL.Image object or image file path.
+    Returns:
+        dict with keys:
+        - 'base64': base64-encoded string
+        - 'width': width in pixels
+        - 'height': height in pixels
+        - 'resolution': string "widthxheight"
     """
     img_obj = None
     
     if isinstance(image, str):
-        # 处理文件路径的情况
+        # Handle file path
         img_obj = Image.open(image)
         with open(image, "rb") as image_file:
             base64_str = base64.b64encode(image_file.read()).decode('utf-8')
     else:
-        # 处理PIL.Image对象的情况
+        # Handle PIL.Image object
         img_obj = image
         buffered = BytesIO()
         image.save(buffered, format='PNG')
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
     
-    # 获取分辨率信息
     width, height = img_obj.size
     
     return {
@@ -52,18 +49,17 @@ def encode_image(image):
 
 def encode_image_with_resize(image):
     """
-    将PIL.Image对象或图像文件路径转换为base64编码字符串，并获取分辨率信息。
-    如果分辨率大于1024x1024，则缩小为原来的一半。
+    Convert a PIL.Image object or image file path to base64-encoded string, get resolution info.
+    If resolution > 1024x1024, resize to half.
     
-    参数:
-        image: 可以是PIL.Image对象或图像文件路径
-        
-    返回:
-        包含以下键的字典:
-        - 'base64': base64编码的字符串
-        - 'width': 图片宽度(像素)
-        - 'height': 图片高度(像素)
-        - 'resolution': 字符串形式的"宽度x高度"
+    Args:
+        image: Can be a PIL.Image object or image file path
+    Returns:
+        dict with keys:
+        - 'base64': base64-encoded string
+        - 'width': width in pixels
+        - 'height': height in pixels
+        - 'resolution': string "widthxheight"
     """
     img_obj = None
     
@@ -72,14 +68,13 @@ def encode_image_with_resize(image):
     else:
         img_obj = image
 
-    # 检查尺寸是否大于1024x1024，如果是则resize为一半
+    # Resize if larger than 1024x1024
     width, height = img_obj.size
     if width > 1024 or height > 1024:
         new_size = (width // 2, height // 2)
         img_obj = img_obj.resize(new_size, Image.LANCZOS)
         width, height = img_obj.size
 
-    # 转base64
     buffered = BytesIO()
     img_obj.save(buffered, format='PNG')
     base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -129,13 +124,13 @@ def process_prompt_init(question, image_path_list, prompt_template, prompt_type,
             parts = question.split("<IMAGE_PLACE_HOLDER_0>")
             content = []
             
-            # 添加图片前的文本（如果有）
+            # Add text before image (if any)
             if parts[0].strip():
                 content.append({"type": "text", "text": parts[0].strip()})
-            # 添加图片
+            # Add image
             content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}})
             
-            # 添加图片后的文本（如果有）
+            # Add text after image (if any)
             if len(parts) > 1 and parts[1].strip():
                 content.append({"type": "text", "text": parts[1].strip()})
 
@@ -159,21 +154,21 @@ def process_prompt_init(question, image_path_list, prompt_template, prompt_type,
             question_with_options = question
             question = prompt_prefix.format(query=question_with_options, width=str(width), height=str(height))
 
-            # 将问题分割成图片前后的部分
+            # Split question into parts
             parts = question.split("<IMAGE_PLACE_HOLDER_0>")
-            # 构建带有image_clue标签的消息
+            # Build message with image_clue tags
             content = []
             
-            # 添加图片前的文本（如果有）
+            # Add text before image (if any)
             if parts[0].strip():
                 content.append({"type": "text", "text": parts[0].strip()})
             
-            # 添加带标签的图片
+            # Add image with tags
             content.append({"type": "text", "text": "<image_clue_0>"})
             content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}})
             content.append({"type": "text", "text": "</image_clue_0>\n\n"})
             
-            # 添加图片后的文本（如果有）
+            # Add text after image (if any)
             if len(parts) > 1 and parts[1].strip():
                 content.append({"type": "text", "text": parts[1].strip()})
 
@@ -229,7 +224,7 @@ def process_prompt_init_multi_images(question, image_path_list, prompt_template,
         sys = json.load(fin)
     prompt_prefix = sys[prompt_type]
     
-    # 准备图片数据
+    # Prepare image data
     image_data = []
     image_information = ""
     
@@ -252,98 +247,79 @@ def process_prompt_init_multi_images(question, image_path_list, prompt_template,
         
         image_information += f"width of image_clue_{i}: {width}, height of image_clue_{i}: {height}\n"
     
-    # 格式化问题
+    # Format question
     formatted_question = prompt_prefix.format(query=question, image_information=image_information)
     
-    # 检查是否有图片占位符
+    # Check if placeholder exists
     has_placeholders = any(f"<IMAGE_PLACE_HOLDER_{i}>" in formatted_question for i in range(len(image_path_list)))
     
     if has_placeholders:
-        # 如果有占位符，按占位符位置插入图片
+        # Insert images at placeholder positions
         if "no_tool" in prompt_type:
-            # 初始化内容列表
             content = []
             remaining_text = formatted_question
             
-            # 处理每个占位符
             for img_data in image_data:
                 placeholder = img_data["placeholder"]
                 if placeholder in remaining_text:
-                    # 分割文本
                     parts = remaining_text.split(placeholder, 1)
                     
-                    # 添加占位符前的文本
                     if parts[0]:
                         content.append({"type": "text", "text": parts[0]})
                     
-                    # 添加图片
                     content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data['base64']}"}})
                     
-                    # 更新剩余文本
                     remaining_text = parts[1]
             
-            # 添加最后剩余的文本
             if remaining_text:
                 content.append({"type": "text", "text": remaining_text})
             
             messages = [{"role": "user", "content": content}]
             return messages
         else:
-            # 使用 image_clue 标签
             content = []
             remaining_text = formatted_question
             
-            # 处理每个占位符
             for img_data in image_data:
                 placeholder = img_data["placeholder"]
                 if placeholder in remaining_text:
-                    # 分割文本
                     parts = remaining_text.split(placeholder, 1)
                     
-                    # 添加占位符前的文本
                     if parts[0]:
                         content.append({"type": "text", "text": parts[0]})
                     
-                    # 添加带标签的图片
                     i = img_data["index"]
                     content.append({"type": "text", "text": f"<image_clue_{i}>"})
                     content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data['base64']}"}})
                     content.append({"type": "text", "text": f"</image_clue_{i}>\n\n"})
                     
-                    # 更新剩余文本
                     remaining_text = parts[1]
             
-            # 添加最后剩余的文本
             if remaining_text:
                 content.append({"type": "text", "text": remaining_text})
             
             messages = [{"role": "user", "content": content}]
             return messages
     else:
-        # 如果没有占位符，按原来的方式处理
+        # Handle as usual if no placeholder
         if "no_tool" in prompt_type:
             content = []
             
-            # 先添加所有图片
             for i, img_data in enumerate(image_data):
                 content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data['base64']}"}})
             
-            # 然后添加文本
             content.append({"type": "text", "text": formatted_question})
             
             messages = [{"role": "user", "content": content}]
             return messages
         else:
-            # 使用 image_clue 标签
             content = []
             
-            # 添加所有图片，带标签
             for i, img_data in enumerate(image_data):
                 content.append({"type": "text", "text": f"<image_clue_{i}>"})
                 content.append({"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_data['base64']}"}})
                 content.append({"type": "text", "text": f"</image_clue_{i}>\n\n"})
             
-            # 添加文本
             content.append({"type": "text", "text": formatted_question})
             
             messages = [{"role": "user", "content": content}]
@@ -360,7 +336,9 @@ def update_messages_with_excu_content(image_nums_in_input, messages, images_resu
         assistant_message_item = messages[-1]['content']
         interpreter_message_text_prefix = [{"type": "text", "text": f"<interpreter>\nText Result:\n{text_result}\nImage Result:\n"}]
         if images_result is not None:
-            for image_base64_item in images_result[image_clue_idx-image_nums_in_input:]:
+            print(f"#### image_clue_index: {image_clue_idx},Image_nums_in_input: {image_nums_in_input}, len of images_result: {len(images_result)}")
+            # for image_base64_item in images_result[image_clue_idx-image_nums_in_input:]:
+            for image_base64_item in images_result:
                 interpreter_message_images = [{"type": "text", "text": f"<image_clue_{image_clue_idx}>"}] + [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64_item}"}}] + [{"type": "text", "text": f"</image_clue_{image_clue_idx}>"}]
                 image_content += interpreter_message_images
                 image_clue_idx += 1
@@ -807,190 +785,190 @@ def evaluate_video_with_cleanup(args, data_list, client):
         del executor
 
 
-# Main execution functions
-def main():
-    """Main function for command-line execution"""
-    parser = argparse.ArgumentParser(description='Visual Inference Demo with GPT')
+# # Main execution functions
+# def main():
+#     """Main function for command-line execution"""
+#     parser = argparse.ArgumentParser(description='Visual Inference Demo with GPT')
     
-    # Model arguments
-    parser.add_argument('--api_name', type=str, default='gpt-4-vision-preview',
-                        help='API model name')
-    parser.add_argument('--client_type', type=str, choices=['openai', 'azure', 'anthropic', 'vllm'],
-                        default='openai', help='Type of client to use')
+#     # Model arguments
+#     parser.add_argument('--api_name', type=str, default='gpt-4-vision-preview',
+#                         help='API model name')
+#     parser.add_argument('--client_type', type=str, choices=['openai', 'azure', 'anthropic', 'vllm'],
+#                         default='openai', help='Type of client to use')
     
-    # Prompt arguments
-    parser.add_argument('--prompt_template', type=str, required=True,
-                        help='Path to prompt template JSON file')
-    parser.add_argument('--prompt', type=str, default='vistool_with_img_info_v2',
-                        help='Prompt type to use from template')
+#     # Prompt arguments
+#     parser.add_argument('--prompt_template', type=str, required=True,
+#                         help='Path to prompt template JSON file')
+#     parser.add_argument('--prompt', type=str, default='vistool_with_img_info_v2',
+#                         help='Prompt type to use from template')
     
-    # Execution arguments
-    parser.add_argument('--exe_code', action='store_true',
-                        help='Whether to execute code blocks')
-    parser.add_argument('--max_tokens', type=int, default=10000,
-                        help='Maximum tokens for API response')
-    parser.add_argument('--temperature', type=float, default=0.6,
-                        help='Temperature for API generation')
+#     # Execution arguments
+#     parser.add_argument('--exe_code', action='store_true',
+#                         help='Whether to execute code blocks')
+#     parser.add_argument('--max_tokens', type=int, default=10000,
+#                         help='Maximum tokens for API response')
+#     parser.add_argument('--temperature', type=float, default=0.6,
+#                         help='Temperature for API generation')
     
-    # Input/Output arguments
-    parser.add_argument('--input_file', type=str, required=True,
-                        help='Path to input JSON file with questions and images')
-    parser.add_argument('--output_file', type=str, required=True,
-                        help='Path to save results')
+#     # Input/Output arguments
+#     parser.add_argument('--input_file', type=str, required=True,
+#                         help='Path to input JSON file with questions and images')
+#     parser.add_argument('--output_file', type=str, required=True,
+#                         help='Path to save results')
     
-    # API keys (can also be set via environment variables)
-    parser.add_argument('--api_key', type=str, default=None,
-                        help='API key (defaults to environment variable)')
-    parser.add_argument('--api_base', type=str, default=None,
-                        help='API base URL for Azure or custom endpoints')
+#     # API keys (can also be set via environment variables)
+#     parser.add_argument('--api_key', type=str, default=None,
+#                         help='API key (defaults to environment variable)')
+#     parser.add_argument('--api_base', type=str, default=None,
+#                         help='API base URL for Azure or custom endpoints')
     
-    args = parser.parse_args()
+#     args = parser.parse_args()
     
-    # Initialize client
-    if args.client_type == 'openai':
-        client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
-    elif args.client_type == 'azure':
-        client = OpenAI(
-            api_key=args.api_key or os.getenv('AZURE_API_KEY'),
-            api_base=args.api_base or os.getenv('AZURE_API_BASE'),
-            api_type='azure',
-            api_version='2023-05-15'
-        )
-    elif args.client_type == 'anthropic':
-        client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
-    elif args.client_type == 'vllm':
-        client = OpenAI(
-            api_key=args.api_key or "EMPTY",
-            base_url=args.api_base or "http://localhost:8000/v1"
-        )
-    else:
-        raise ValueError(f"Unsupported client type: {args.client_type}")
+#     # Initialize client
+#     if args.client_type == 'openai':
+#         client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
+#     elif args.client_type == 'azure':
+#         client = OpenAI(
+#             api_key=args.api_key or os.getenv('AZURE_API_KEY'),
+#             api_base=args.api_base or os.getenv('AZURE_API_BASE'),
+#             api_type='azure',
+#             api_version='2023-05-15'
+#         )
+#     elif args.client_type == 'anthropic':
+#         client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
+#     elif args.client_type == 'vllm':
+#         client = OpenAI(
+#             api_key=args.api_key or "EMPTY",
+#             base_url=args.api_base or "http://localhost:8000/v1"
+#         )
+#     else:
+#         raise ValueError(f"Unsupported client type: {args.client_type}")
     
-    # Load input data
-    with open(args.input_file, 'r') as f:
-        data_list = json.load(f)
+#     # Load input data
+#     with open(args.input_file, 'r') as f:
+#         data_list = json.load(f)
     
-    # Process data
-    results = []
+#     # Process data
+#     results = []
     
-    # Determine data type and use appropriate evaluation function
-    if isinstance(data_list, list) and len(data_list) > 0:
-        sample_data = data_list[0]
+#     # Determine data type and use appropriate evaluation function
+#     if isinstance(data_list, list) and len(data_list) > 0:
+#         sample_data = data_list[0]
         
-        if 'image_nums_in_input' in sample_data:
-            # Multi-image or video data
-            if 'video' in args.input_file.lower():
-                results = evaluate_video_with_cleanup(args, data_list, client)
-            else:
-                results = evaluate_multi_images_with_cleanup(args, data_list, client)
-        else:
-            # Single image data
-            results = evaluate_batch_with_cleanup(args, data_list, client)
-    else:
-        print("Invalid input data format")
-        return
+#         if 'image_nums_in_input' in sample_data:
+#             # Multi-image or video data
+#             if 'video' in args.input_file.lower():
+#                 results = evaluate_video_with_cleanup(args, data_list, client)
+#             else:
+#                 results = evaluate_multi_images_with_cleanup(args, data_list, client)
+#         else:
+#             # Single image data
+#             results = evaluate_batch_with_cleanup(args, data_list, client)
+#     else:
+#         print("Invalid input data format")
+#         return
     
-    # Save results
-    output_data = []
-    for i, (data, (messages, response)) in enumerate(zip(data_list, results)):
-        output_item = {
-            'id': data.get('id', i),
-            'question': data['question'],
-            'response': response,
-            'messages': messages,
-            'image_paths': data.get('image_path_list', [])
-        }
+#     # Save results
+#     output_data = []
+#     for i, (data, (messages, response)) in enumerate(zip(data_list, results)):
+#         output_item = {
+#             'id': data.get('id', i),
+#             'question': data['question'],
+#             'response': response,
+#             'messages': messages,
+#             'image_paths': data.get('image_path_list', [])
+#         }
         
-        # Add ground truth if available
-        if 'answer' in data:
-            output_item['ground_truth'] = data['answer']
+#         # Add ground truth if available
+#         if 'answer' in data:
+#             output_item['ground_truth'] = data['answer']
         
-        output_data.append(output_item)
+#         output_data.append(output_item)
     
-    # Write output
-    with open(args.output_file, 'w') as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
+#     # Write output
+#     with open(args.output_file, 'w') as f:
+#         json.dump(output_data, f, indent=2, ensure_ascii=False)
     
-    print(f"Results saved to {args.output_file}")
+#     print(f"Results saved to {args.output_file}")
 
 
-def run_single_example(question, image_paths, args_dict, client=None):
-    """
-    Convenience function to run a single example programmatically
+# def run_single_example(question, image_paths, args_dict, client=None):
+#     """
+#     Convenience function to run a single example programmatically
     
-    Args:
-        question: The question to ask
-        image_paths: List of image file paths
-        args_dict: Dictionary containing configuration (prompt_template, prompt, exe_code, etc.)
-        client: Pre-initialized client (optional)
+#     Args:
+#         question: The question to ask
+#         image_paths: List of image file paths
+#         args_dict: Dictionary containing configuration (prompt_template, prompt, exe_code, etc.)
+#         client: Pre-initialized client (optional)
     
-    Returns:
-        tuple: (messages, response)
-    """
-    # Convert args_dict to namespace for compatibility
-    class Args:
-        pass
+#     Returns:
+#         tuple: (messages, response)
+#     """
+#     # Convert args_dict to namespace for compatibility
+#     class Args:
+#         pass
     
-    args = Args()
-    for key, value in args_dict.items():
-        setattr(args, key, value)
+#     args = Args()
+#     for key, value in args_dict.items():
+#         setattr(args, key, value)
     
-    # Initialize client if not provided
-    if client is None:
-        if args.client_type == 'openai':
-            client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
-        elif args.client_type == 'anthropic':
-            client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
-        else:
-            raise ValueError(f"Unsupported client type: {args.client_type}")
+#     # Initialize client if not provided
+#     if client is None:
+#         if args.client_type == 'openai':
+#             client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
+#         elif args.client_type == 'anthropic':
+#             client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
+#         else:
+#             raise ValueError(f"Unsupported client type: {args.client_type}")
     
-    # Prepare data
-    data = {
-        'question': question,
-        'image_path_list': image_paths if isinstance(image_paths, list) else [image_paths]
-    }
+#     # Prepare data
+#     data = {
+#         'question': question,
+#         'image_path_list': image_paths if isinstance(image_paths, list) else [image_paths]
+#     }
     
-    # Run evaluation
-    return evaluate_single_with_cleanup(args, data, client)
+#     # Run evaluation
+#     return evaluate_single_with_cleanup(args, data, client)
 
 
-# Example usage function
-def example_usage():
-    """Example of how to use the inference functions"""
+# # Example usage function
+# def example_usage():
+#     """Example of how to use the inference functions"""
     
-    # Configuration
-    args_dict = {
-        'prompt_template': 'path/to/prompt_template.json',
-        'prompt': 'vistool_with_img_info_v2',
-        'exe_code': True,
-        'max_tokens': 10000,
-        'temperature': 0.6,
-        'api_name': 'gpt-4-vision-preview',
-        'client_type': 'openai',
-        'api_key': None  # Will use environment variable
-    }
+#     # Configuration
+#     args_dict = {
+#         'prompt_template': 'path/to/prompt_template.json',
+#         'prompt': 'vistool_with_img_info_v2',
+#         'exe_code': True,
+#         'max_tokens': 10000,
+#         'temperature': 0.6,
+#         'api_name': 'gpt-4-vision-preview',
+#         'client_type': 'openai',
+#         'api_key': None  # Will use environment variable
+#     }
     
-    # Single image example
-    question = "What objects can you see in this image?"
-    image_path = "path/to/image.jpg"
+#     # Single image example
+#     question = "What objects can you see in this image?"
+#     image_path = "path/to/image.jpg"
     
-    messages, response = run_single_example(question, image_path, args_dict)
-    print(f"Response: {response}")
+#     messages, response = run_single_example(question, image_path, args_dict)
+#     print(f"Response: {response}")
     
-    # Multi-image example
-    question_multi = "What are the differences between these images?"
-    image_paths = ["path/to/image1.jpg", "path/to/image2.jpg"]
+#     # Multi-image example
+#     question_multi = "What are the differences between these images?"
+#     image_paths = ["path/to/image1.jpg", "path/to/image2.jpg"]
     
-    messages_multi, response_multi = run_single_example(question_multi, image_paths, args_dict)
-    print(f"Multi-image response: {response_multi}")
+#     messages_multi, response_multi = run_single_example(question_multi, image_paths, args_dict)
+#     print(f"Multi-image response: {response_multi}")
 
 
-if __name__ == "__main__":
-    # Check if running as script with arguments
-    if len(sys.argv) > 1:
-        main()
-    else:
-        # Run example if no arguments provided
-        print("No arguments provided. Running example usage...")
-        print("For command-line usage, run with --help flag")
-        # example_usage()  # Uncomment to run example
+# if __name__ == "__main__":
+#     # Check if running as script with arguments
+#     if len(sys.argv) > 1:
+#         main()
+#     else:
+#         # Run example if no arguments provided
+#         print("No arguments provided. Running example usage...")
+#         print("For command-line usage, run with --help flag")
+#         # example_usage()  # Uncomment to run example

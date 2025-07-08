@@ -1,2 +1,4 @@
 test_data/test_messages.json
 api_config.json
+api_config_files/api_config_openai.json
+inference_engine/__pycache__/

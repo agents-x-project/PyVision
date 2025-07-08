@@ -7,67 +7,6 @@ from inference_engine.vis_inference_demo_gpt import evaluate_single_data, evalua
 from inference_engine.safe_persis_shared_vis_python_exe import PythonExecutor
 
 def main():
-    # Configuration
-    image_path = "./test_data/one_image_demo.png"
-    prompt_template = "./prompt_template/prompt_template_vis.json"
-    prompt = "vistool_with_img_info_v2"
-    question = "From the information on that advertising board, what is the type of this shop?"
-
-    # API configuration
-    api_config_path = "./api_config.json"
-    api_config = json.load(open(api_config_path, "r"))
-    api_key = api_config['api_key'][0]
-    base_url = api_config['base_url']
-    
-    # Initialize client
-    client = OpenAI(api_key=api_key, base_url=base_url)
-
-    # Data preparation
-    data = {
-        "question": question,
-        "image_path_list": [image_path],
-    }
-
-    # Arguments configuration
-    args = {
-        "max_tokens": 10000,
-        "prompt_template": prompt_template,
-        "prompt": prompt,
-        "exe_code": True,
-        "temperature": 0.6,
-        "client_type": "openai",
-        "api_name": "gpt-4.1"
-    }
-
-    # Method 1: Using the wrapper function (recommended for automatic cleanup)
-    print("Running inference with safe execution...")
-    messages, final_response = evaluate_single_with_cleanup(args, data, client)
-
-    # Save results
-    save_messages_path = "./test_data/test_messages.json"
-    with open(save_messages_path, "w", encoding="utf-8") as f:
-        json.dump(messages, f, indent=4, ensure_ascii=False)
-    
-    print(f"Final response: {final_response}")
-    print(f"Messages saved to: {save_messages_path}")
-
-    # Method 2: Manual executor management (if you need more control)
-    # This shows how to manually manage the executor lifecycle
-    """
-    executor = PythonExecutor(use_process_isolation=True)
-    try:
-        messages, final_response = evaluate_single_data(args, data, client, executor)
-        
-        save_messages_path = "./test_data/test_messages.json"
-        with open(save_messages_path, "w", encoding="utf-8") as f:
-            json.dump(messages, f, indent=4, ensure_ascii=False)
-            
-    finally:
-        # Ensure cleanup
-        del executor
-    """
-
-def main_with_args():
     """Main function with command-line arguments support"""
     parser = argparse.ArgumentParser(description='Visual Question Answering with Code Execution')
     
@@ -136,22 +75,18 @@ def main_with_args():
     print(f"Question: {args.question}")
     print("Running inference with safe execution...")
     
-    messages, final_response = evaluate_single_with_cleanup(eval_args, data, client)
+    # messages, final_response = evaluate_single_with_cleanup(eval_args, data, client)
+    executor = PythonExecutor()
+    messages, final_response = evaluate_single_data(eval_args, data, client, executor)
     
     # Save results
     os.makedirs(args.output_dir, exist_ok=True)
     
     if args.save_messages:
-        messages_path = os.path.join(args.output_dir, "messages.json")
+        messages_path = os.path.join(args.output_dir, "test_messages.json")
         with open(messages_path, "w", encoding="utf-8") as f:
             json.dump(messages, f, indent=4, ensure_ascii=False)
         print(f"Messages saved to: {messages_path}")
-    
-    # Save response
-    response_path = os.path.join(args.output_dir, "response.txt")
-    with open(response_path, "w", encoding="utf-8") as f:
-        f.write(final_response)
-    print(f"Response saved to: {response_path}")
     
     # Print response
     print("\n" + "="*50)
@@ -160,76 +95,6 @@ def main_with_args():
     print(final_response)
     print("="*50 + "\n")
 
-def batch_process():
-    """Example function for batch processing multiple images"""
-    api_config_path = "./api_config.json"
-    api_config = json.load(open(api_config_path, "r"))
-    api_key = api_config['api_key'][0]
-    base_url = api_config['base_url']
-    
-    client = OpenAI(api_key=api_key, base_url=base_url)
-    
-    # Example batch data
-    batch_data = [
-        {
-            "question": "What objects can you see in this image?",
-            "image_path_list": ["./test_data/image1.png"],
-        },
-        {
-            "question": "What is the main color in this image?",
-            "image_path_list": ["./test_data/image2.png"],
-        },
-        # Add more items as needed
-    ]
-    
-    args = {
-        "max_tokens": 10000,
-        "prompt_template": "./prompt_template/prompt_template_vis.json",
-        "prompt": "vistool_with_img_info_v2",
-        "exe_code": True,
-        "temperature": 0.6,
-        "client_type": "openai",
-        "api_name": "gpt-4.1"
-    }
-    
-    # Use a single executor for the batch (more efficient)
-    executor = PythonExecutor(use_process_isolation=True)
-    
-    try:
-        results = []
-        for i, data in enumerate(batch_data):
-            print(f"\nProcessing item {i+1}/{len(batch_data)}...")
-            try:
-                messages, response = evaluate_single_data(args, data, client, executor)
-                results.append({
-                    "question": data["question"],
-                    "response": response,
-                    "messages": messages
-                })
-                # Reset executor state between items if needed
-                executor.reset()
-            except Exception as e:
-                print(f"Error processing item {i+1}: {str(e)}")
-                results.append({
-                    "question": data["question"],
-                    "error": str(e)
-                })
-        
-        # Save batch results
-        with open("./test_data/batch_results.json", "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=4, ensure_ascii=False)
-        
-        print(f"\nBatch processing complete. Results saved to ./test_data/batch_results.json")
-        
-    finally:
-        # Cleanup
-        del executor
-
 
 if __name__ == "__main__":
-    # Check if running with command-line arguments
-    if len(sys.argv) > 1:
-        main_with_args()
-    else:
-        # Run simple demo
-        main()
+    main()

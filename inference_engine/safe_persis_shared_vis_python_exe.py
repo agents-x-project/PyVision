@@ -34,44 +34,44 @@ def base64_to_image(
     convert_mode: Optional[str] = "RGB"
 ) -> Union[Image.Image, None]:
     """
-    将Base64编码的图片字符串转换为PIL Image对象
-    
+    Convert a Base64-encoded image string to a PIL Image object.
+
     Args:
-        base64_str: Base64编码的图片字符串（可带data:前缀）
-        remove_prefix: 是否自动去除"data:image/..."前缀（默认True）
-        convert_mode: 转换为指定模式（如"RGB"/"RGBA"，None表示不转换）
-    
+        base64_str: Base64-encoded image string (can include data: prefix)
+        remove_prefix: Whether to automatically remove the "data:image/..." prefix (default True)
+        convert_mode: Convert to the specified mode (such as "RGB"/"RGBA", None means no conversion)
+
     Returns:
-        PIL.Image.Image 对象，解码失败时返回None
+        PIL.Image.Image object, or None if decoding fails
         
     Examples:
         >>> img = base64_to_image("data:image/png;base64,iVBORw0KGg...")
         >>> img = base64_to_image("iVBORw0KGg...", remove_prefix=False)
     """
     try:
-        # 1. 处理Base64前缀
+        # 1. Handle Base64 prefix
         if remove_prefix and "," in base64_str:
             base64_str = base64_str.split(",")[1]
 
-        # 2. 解码Base64
+        # 2. Decode Base64
         image_data = base64.b64decode(base64_str)
         
-        # 3. 转换为PIL Image
+        # 3. Convert to PIL Image
         image = Image.open(BytesIO(image_data))
         
-        # 4. 可选模式转换
+        # 4. Optional mode conversion
         if convert_mode:
             image = image.convert(convert_mode)
             
         return image
     
     except (base64.binascii.Error, OSError, Exception) as e:
-        print(f"Base64解码失败: {str(e)}")
+        print(f"Base64 decode failed: {str(e)}")
         return None
 
 
 class PersistentWorker:
-    """持久化的工作进程"""
+    """Persistent worker process."""
     
     def __init__(self):
         self.input_queue = multiprocessing.Queue()
@@ -80,28 +80,28 @@ class PersistentWorker:
         self.start()
     
     def start(self):
-        """启动工作进程"""
+        """Start the worker process."""
         self.process = Process(target=self._worker_loop)
         self.process.daemon = True
         self.process.start()
     
     def _worker_loop(self):
-        """工作进程主循环"""
+        """Main loop for the worker process."""
         runtime = None
         runtime_class = None
         
         while True:
             try:
-                # 获取任务
+                # Get task
                 task = self.input_queue.get()
                 
-                if task is None:  # 终止信号
+                if task is None:  # Termination signal
                     break
                 
                 task_type = task.get('type')
                 
                 if task_type == 'init':
-                    # 初始化Runtime
+                    # Initialize runtime
                     messages = task.get('messages', [])
                     runtime_class = task.get('runtime_class', ImageRuntime)
                     runtime = runtime_class(messages)
@@ -111,7 +111,7 @@ class PersistentWorker:
                     })
                 
                 elif task_type == 'execute':
-                    # 执行代码
+                    # Execute code
                     if runtime is None:
                         messages = task.get('messages', [])
                         runtime_class = task.get('runtime_class', ImageRuntime)
@@ -123,7 +123,7 @@ class PersistentWorker:
                     answer_expr = task.get('answer_expr')
                     
                     try:
-                        # 记录执行前的图像数量
+                        # Record the number of images before execution
                         pre_figures_count = len(runtime._global_vars.get("_captured_figures", []))
                         
                         if get_answer_from_stdout:
@@ -146,11 +146,11 @@ class PersistentWorker:
                                 runtime.exec_code("\n".join(code))
                                 result = ""
                         
-                        # 获取新生成的图像
+                        # Get newly generated images
                         all_figures = runtime._global_vars.get("_captured_figures", [])
                         new_figures = all_figures[pre_figures_count:]
                         
-                        # 构建结果
+                        # Build result
                         if new_figures:
                             result = {
                                 'text': result,
@@ -174,7 +174,7 @@ class PersistentWorker:
                         })
                 
                 elif task_type == 'reset':
-                    # 重置Runtime
+                    # Reset runtime
                     messages = task.get('messages', [])
                     runtime_class = task.get('runtime_class', ImageRuntime)
                     runtime = runtime_class(messages)
@@ -192,7 +192,7 @@ class PersistentWorker:
     
     def execute(self, code: List[str], messages: list = None, runtime_class=None, 
                 get_answer_from_stdout=True, answer_symbol=None, answer_expr=None, timeout: int = 30):
-        """执行代码"""
+        """Execute code."""
         self.input_queue.put({
             'type': 'execute',
             'code': code,
@@ -214,7 +214,7 @@ class PersistentWorker:
             }
     
     def init_runtime(self, messages: list, runtime_class=None):
-        """初始化Runtime"""
+        """Initialize runtime."""
         self.input_queue.put({
             'type': 'init',
             'messages': messages,
@@ -223,7 +223,7 @@ class PersistentWorker:
         return self.output_queue.get()
     
     def reset_runtime(self, messages: list = None, runtime_class=None):
-        """重置Runtime"""
+        """Reset runtime."""
         self.input_queue.put({
             'type': 'reset',
             'messages': messages,
@@ -232,7 +232,7 @@ class PersistentWorker:
         return self.output_queue.get()
     
     def terminate(self):
-        """终止工作进程"""
+        """Terminate the worker process."""
         if self.process and self.process.is_alive():
             self.input_queue.put(None)
             self.process.join(timeout=5)
@@ -254,14 +254,14 @@ class GenericRuntime:
             self.exec_code(c)
 
     def exec_code(self, code_piece: str) -> None:
-        # 安全检查
+        # Security check
         if regex.search(r"(\s|^)?(input|os\.system|subprocess)\(", code_piece):
             raise RuntimeError("Forbidden function calls detected")
         
-        # 检测并修改plt.show()调用
+        # Detect and modify plt.show() calls
         if "plt.show()" in code_piece:
             modified_code = code_piece.replace("plt.show()", """
-# 捕获当前图像
+# Capture current figure
 buf = io.BytesIO()
 plt.savefig(buf, format='png')
 buf.seek(0)
@@ -269,7 +269,7 @@ _captured_image = base64.b64encode(buf.read()).decode('utf-8')
 _captured_figures.append(_captured_image)
 plt.close()
 """)
-            # 确保_captured_figures变量存在
+            # Ensure _captured_figures variable exists
             if "_captured_figures" not in self._global_vars:
                 self._global_vars["_captured_figures"] = []
             
@@ -296,13 +296,13 @@ plt.close()
 class ImageRuntime(GenericRuntime):
     HEADERS = [
         "import matplotlib",
-        "matplotlib.use('Agg')",  # 使用非交互式后端
+        "matplotlib.use('Agg')",  # Use non-interactive backend
         "import matplotlib.pyplot as plt",
         "from PIL import Image",
         "import io",
         "import base64",
         "import numpy as np",
-        "_captured_figures = []",  # 初始化图像捕获列表
+        "_captured_figures = []",  # Initialize image capture list
     ]
 
     def __init__(self, messages):
@@ -367,7 +367,7 @@ class PythonExecutor:
         self.persistent_worker = None
 
     def _ensure_worker(self):
-        """确保工作进程存在"""
+        """Ensure the worker process exists."""
         if self.persistent_worker is None:
             self.persistent_worker = PersistentWorker()
 
@@ -385,10 +385,10 @@ class PythonExecutor:
     ) -> Tuple[Union[str, Dict[str, Any]], str]:
         
         if self.use_process_isolation:
-            # 确保工作进程存在
+            # Ensure worker process exists
             self._ensure_worker()
             
-            # 执行代码
+            # Execute code
             result = self.persistent_worker.execute(
                 code,
                 messages,
@@ -408,7 +408,7 @@ class PythonExecutor:
                 }
                 return error_result, result.get('report', f"Error: {result.get('error', 'Unknown error')}")
         else:
-            # 非隔离模式（向后兼容）
+            # Non-isolation mode (for backward compatibility)
             runtime = runtime_class(messages) if runtime_class else self.runtime_class(messages)
             
             try:
@@ -459,7 +459,7 @@ class PythonExecutor:
     @staticmethod
     def truncate(s, max_length=400):
         if isinstance(s, dict):
-            # 如果是字典（包含图像），只截断文本部分
+            # If it is a dict (with images), truncate only the text part
             if 'text' in s:
                 half = max_length // 2
                 if len(s['text']) > max_length:
@@ -509,16 +509,16 @@ class PythonExecutor:
 
         batch_results = []
         for code, (res, report) in zip(all_code_snippets, all_exec_results):
-            # 处理结果
+            # Handle results
             if isinstance(res, dict):
-                # 如果结果包含图像，特殊处理
+                # If result contains images, special handling
                 if 'text' in res:
                     res['text'] = str(res['text']).strip()
                     res['text'] = self.truncate(res['text'])
                 report = str(report).strip()
                 report = self.truncate(report)
             else:
-                # 普通文本结果
+                # Normal text result
                 res = str(res).strip()
                 res = self.truncate(res)
                 report = str(report).strip()
@@ -527,12 +527,12 @@ class PythonExecutor:
         return batch_results
 
     def reset(self, messages=None):
-        """重置执行器状态"""
+        """Reset executor state."""
         if self.use_process_isolation and self.persistent_worker:
             self.persistent_worker.reset_runtime(messages, self.runtime_class)
 
     def __del__(self):
-        """清理资源"""
+        """Clean up resources."""
         if self.persistent_worker:
             self.persistent_worker.terminate()
 
