@@ -44,7 +44,7 @@ pip install -r requirements.txt
 
 ## 💥Run PyVision
 
-### Setup API Config
+### 1. Setup API Config
 Before running `PyVision`, you need to first setup the API config file, including the key and the base_url. We provide three types of clients: OpenAI, Azure and vLLM.
 
 #### OpenAI Client
@@ -77,7 +77,7 @@ Before running `PyVision`, you need to first setup the API config file, includin
     "base_url": "xxx"
 }
 ```
-### Run 
+### 2. Run 
 If you have setup the OpenAI API config file, you can run the `run.sh` file.
 ```bash
 # openai client
@@ -97,7 +97,7 @@ python main.py \
 ```
 
 
-### Visualization
+### 3. Visualization
 After running the **run.sh** file, the generated message is stored at `./test_data/test_message.json`. <br>
 Upload the message file to our hosted visualization HuggingFace space: [visualization demo](https://huggingface.co/spaces/Agents-X/data-view).
 
