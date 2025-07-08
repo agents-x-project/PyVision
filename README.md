@@ -56,6 +56,9 @@ Instantiate the API config file.
 ```bash
 python main.py
 ```
+### OpenAI Client
+### Azure Client
+### vLLM Client 
 
 ## 📜Citation
 ```bibtex

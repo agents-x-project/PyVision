@@ -1,5 +1,7 @@
+# vis_inference_demo_gpt.py
+
 import sys
-sys.path.append("/mnt/petrelfs/zhaoshitian/TIR-Data-Synthesis")
+# sys.path.append("/mnt/petrelfs/zhaoshitian/TIR-Data-Synthesis")
 import os
 import re
 import json
@@ -7,7 +9,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 import argparse
-from inference_engine.shared_vis_python_exe import PythonExecutor, ImageRuntime
+from inference_engine.safe_persis_shared_vis_python_exe import PythonExecutor, ImageRuntime
 from openai import OpenAI
 import anthropic
 
@@ -222,42 +224,6 @@ def process_prompt_init(question, image_path_list, prompt_template, prompt_type,
 
             return messages
 
-# def process_prompt_init_multi_images(question, image_path_list, prompt_template, prompt_type):
-#     with open(prompt_template, "r") as fin:
-#         sys = json.load(fin)
-#     prompt_prefix = sys[prompt_type]
-
-#     messages = None
-
-#     image_information = ""
-
-#     for i, image_path in enumerate(image_path_list):
-
-#         img_result = encode_image(image_path)
-#         image_base64 = img_result['base64']
-#         width = img_result['width']
-#         height = img_result['height']
-#         question_with_options = question
-
-#         if messages is None:
-
-#             messages = [
-#                 {
-#                     "role": "user",
-#                     "content": [{"type": "text", "text": "<image_clue_0>"}] + [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}] + [{"type": "text", "text": "</image_clue_0>\n\n"}]
-#                 }
-#             ]
-
-#             image_information += f"width of image_clue_0: {width}, height of image_clue_0: {height}\n"
-
-#         else:
-#             image_information += f"width of image_clue_{i}: {width}, height of image_clue_{i}: {height}\n"
-#             messages[0]['content'] += [{"type": "text", "text": f"<image_clue_{i}>"}] + [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}] + [{"type": "text", "text": f"</image_clue_{i}>\n\n"}]
-
-#     messages[0]['content'] += [{"type": "text", "text": prompt_prefix.format(query=question_with_options, image_information=image_information)}]
-
-#     return messages
-
 def process_prompt_init_multi_images(question, image_path_list, prompt_template, prompt_type, api_name):
     with open(prompt_template, "r") as fin:
         sys = json.load(fin)
@@ -402,8 +368,6 @@ def update_messages_with_excu_content(image_nums_in_input, messages, images_resu
             image_content = [{"type": "text", "text": "None"}]
         interpreter_message_text_profill = [{"type": "text", "text": "</interpreter>\n"}]
 
-        # assistant_message_item = assistant_message_item + interpreter_message_text_prefix + image_content + interpreter_message_text_profill
-        # new_messages.append({"role": "assistant", "content": assistant_message_item})
         interpreter_message_item = interpreter_message_text_prefix + image_content + interpreter_message_text_profill
         new_messages.append({"role": "assistant", "content": assistant_message_item})
         new_messages.append({"role": "user", "content": interpreter_message_item})
@@ -416,8 +380,6 @@ def update_messages_with_excu_content(image_nums_in_input, messages, images_resu
         interpreter_message_text_prefix = [{"type": "text", "text": f"<interpreter>{error_result}"}]
         interpreter_message_text_profill = [{"type": "text", "text": "</interpreter>\n"}]
     
-        # assistant_message_item = assistant_message_item + interpreter_message_text_prefix + interpreter_message_text_profill
-        # new_messages.append({"role": "assistant", "content": assistant_message_item})
         interpreter_message_item = interpreter_message_text_prefix + interpreter_message_text_profill
         new_messages.append({"role": "assistant", "content": assistant_message_item})
         new_messages.append({"role": "user", "content": interpreter_message_item})
@@ -444,18 +406,15 @@ def update_messages_with_text(messages, generated_content):
 
 def call_chatgpt_api(args, messages, client, max_tokens=10000, stop=None, temperature=0.6):
     """Call ChatGPT API with the given messages"""
-    # print(f"stop tokens: {stop}")
-    # print(messages)
     try:
         client_type = args.client_type
         api_name = args.api_name
     except:
         client_type = args['client_type']
         api_name = args['api_name']
-    # try:
+    
     if client_type == "openai" or client_type == "azure":
         response = client.chat.completions.create(
-            # model="gpt-4.1",  # 使用支持视觉的模型
             model=api_name,
             messages=messages,
             max_tokens=max_tokens,
@@ -465,7 +424,6 @@ def call_chatgpt_api(args, messages, client, max_tokens=10000, stop=None, temper
             timeout=300
         )
         response_text = response.choices[0].message.content
-        # print(response_text)
     elif client_type == "anthropic":
         message = client.messages.create(
             model=api_name,
@@ -475,10 +433,10 @@ def call_chatgpt_api(args, messages, client, max_tokens=10000, stop=None, temper
             top_p=1.0,
             stop_sequences=stop
         )  
-        response_text = message.content
+        response_text = message.content[0].text if isinstance(message.content, list) else message.content
     elif client_type == "vllm":
         response = client.chat.completions.create(
-            model=api_name,  # 使用支持视觉的模型
+            model=api_name,
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature,
@@ -487,9 +445,8 @@ def call_chatgpt_api(args, messages, client, max_tokens=10000, stop=None, temper
         )
         response_text = response.choices[0].message.content
     else:
-        print("You args.client_type much be one of openai, azure and vllm.")
-    
-    # response_text = response.choices[0].message.content
+        print("Your args.client_type must be one of openai, azure, anthropic and vllm.")
+        return None, None
     
     # 检查是否遇到停止标记
     stop_reason = None
@@ -499,19 +456,17 @@ def call_chatgpt_api(args, messages, client, max_tokens=10000, stop=None, temper
                 stop_reason = s
                 break
     else:
-        stop_reason = response.choices[0].finish_reason
+        if client_type in ["openai", "azure", "vllm"]:
+            stop_reason = response.choices[0].finish_reason
+        else:
+            stop_reason = "stop"
 
     if "<code>" in response_text:
         stop_reason = "</code>"
     
     return response_text, stop_reason
-    
-    # except Exception as e:
-    #     print(f"API Error: {str(e)}")
-    #     return None, None
 
 def evaluate_single_data(args, data, client, executor):
-
     try:
         prompt_template = args.prompt_template
         prompt = args.prompt
@@ -588,7 +543,7 @@ def evaluate_single_data(args, data, client, executor):
                     text_result = None
                     images_result = None
 
-            messages, new_image_clue_idx = update_messages_with_excu_content(1, messages, images_result, text_result, error_result, image_clue_idx)
+            messages, new_image_clue_idx = update_messages_with_excu_content(len(image_path_list), messages, images_result, text_result, error_result, image_clue_idx)
             image_clue_idx = new_image_clue_idx
             
             code_execution_count += 1
@@ -612,7 +567,6 @@ def evaluate_single_data(args, data, client, executor):
 
 
 def evaluate_single_data_multi_images(args, data, client, executor):
-
     try:
         prompt_template = args.prompt_template
         prompt = args.prompt
@@ -628,6 +582,7 @@ def evaluate_single_data_multi_images(args, data, client, executor):
     
     # 生成初始响应
     response_text, pred_stop_reason = call_chatgpt_api(
+        args,
         messages, 
         client,
         max_tokens=max_tokens,
@@ -677,6 +632,7 @@ def evaluate_single_data_multi_images(args, data, client, executor):
             
             # 生成下一部分响应
             response_text, pred_stop_reason = call_chatgpt_api(
+                args,
                 messages, 
                 client,
                 max_tokens=max_tokens,
@@ -691,7 +647,6 @@ def evaluate_single_data_multi_images(args, data, client, executor):
     return messages, final_response
 
 def evaluate_single_data_video(args, data, client, executor):
-
     try:
         prompt_template = args.prompt_template
         prompt = args.prompt
@@ -707,6 +662,7 @@ def evaluate_single_data_video(args, data, client, executor):
     
     # 生成初始响应
     response_text, pred_stop_reason = call_chatgpt_api(
+        args,
         messages, 
         client,
         max_tokens=max_tokens,
@@ -756,6 +712,7 @@ def evaluate_single_data_video(args, data, client, executor):
             
             # 生成下一部分响应
             response_text, pred_stop_reason = call_chatgpt_api(
+                args,
                 messages, 
                 client,
                 max_tokens=max_tokens,
@@ -768,3 +725,272 @@ def evaluate_single_data_video(args, data, client, executor):
             break
        
     return messages, final_response
+
+
+# New wrapper functions for safe execution with cleanup
+def evaluate_batch_with_cleanup(args, data_list, client):
+    """Wrapper function to ensure proper cleanup of resources when processing multiple items"""
+    # Initialize executor with process isolation
+    executor = PythonExecutor(use_process_isolation=True)
+    
+    try:
+        results = []
+        for data in data_list:
+            try:
+                result = evaluate_single_data(args, data, client, executor)
+                results.append(result)
+            except Exception as e:
+                print(f"Error processing data item: {str(e)}")
+                results.append((None, f"Error: {str(e)}"))
+                # Reset the executor for the next item
+                executor.reset()
+        
+        return results
+    finally:
+        # Ensure cleanup of persistent worker
+        del executor
+
+def evaluate_single_with_cleanup(args, data, client):
+    """Wrapper function for evaluating a single item with proper cleanup"""
+    # Initialize executor with process isolation
+    executor = PythonExecutor(use_process_isolation=True)
+
+    try:
+        result = evaluate_single_data(args, data, client, executor)
+        return result
+    finally:
+        # Ensure cleanup of persistent worker
+        del executor
+
+def evaluate_multi_images_with_cleanup(args, data_list, client):
+    """Wrapper function for multi-image evaluation with proper cleanup"""
+    # Initialize executor with process isolation
+    executor = PythonExecutor(use_process_isolation=True)
+    
+    try:
+        results = []
+        for data in data_list:
+            try:
+                result = evaluate_single_data_multi_images(args, data, client, executor)
+                results.append(result)
+            except Exception as e:
+                print(f"Error processing multi-image data: {str(e)}")
+                results.append((None, f"Error: {str(e)}"))
+                # Reset the executor for the next item
+                executor.reset()
+        
+        return results
+    finally:
+        # Ensure cleanup of persistent worker
+        del executor
+
+def evaluate_video_with_cleanup(args, data_list, client):
+    """Wrapper function for video evaluation with proper cleanup"""
+    # Initialize executor with process isolation
+    executor = PythonExecutor(use_process_isolation=True)
+    
+    try:
+        results = []
+        for data in data_list:
+            try:
+                result = evaluate_single_data_video(args, data, client, executor)
+                results.append(result)
+            except Exception as e:
+                print(f"Error processing video data: {str(e)}")
+                results.append((None, f"Error: {str(e)}"))
+                # Reset the executor for the next item
+                executor.reset()
+        
+        return results
+    finally:
+        # Ensure cleanup of persistent worker
+        del executor
+
+
+# Main execution functions
+def main():
+    """Main function for command-line execution"""
+    parser = argparse.ArgumentParser(description='Visual Inference Demo with GPT')
+    
+    # Model arguments
+    parser.add_argument('--api_name', type=str, default='gpt-4-vision-preview',
+                        help='API model name')
+    parser.add_argument('--client_type', type=str, choices=['openai', 'azure', 'anthropic', 'vllm'],
+                        default='openai', help='Type of client to use')
+    
+    # Prompt arguments
+    parser.add_argument('--prompt_template', type=str, required=True,
+                        help='Path to prompt template JSON file')
+    parser.add_argument('--prompt', type=str, default='vistool_with_img_info_v2',
+                        help='Prompt type to use from template')
+    
+    # Execution arguments
+    parser.add_argument('--exe_code', action='store_true',
+                        help='Whether to execute code blocks')
+    parser.add_argument('--max_tokens', type=int, default=10000,
+                        help='Maximum tokens for API response')
+    parser.add_argument('--temperature', type=float, default=0.6,
+                        help='Temperature for API generation')
+    
+    # Input/Output arguments
+    parser.add_argument('--input_file', type=str, required=True,
+                        help='Path to input JSON file with questions and images')
+    parser.add_argument('--output_file', type=str, required=True,
+                        help='Path to save results')
+    
+    # API keys (can also be set via environment variables)
+    parser.add_argument('--api_key', type=str, default=None,
+                        help='API key (defaults to environment variable)')
+    parser.add_argument('--api_base', type=str, default=None,
+                        help='API base URL for Azure or custom endpoints')
+    
+    args = parser.parse_args()
+    
+    # Initialize client
+    if args.client_type == 'openai':
+        client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
+    elif args.client_type == 'azure':
+        client = OpenAI(
+            api_key=args.api_key or os.getenv('AZURE_API_KEY'),
+            api_base=args.api_base or os.getenv('AZURE_API_BASE'),
+            api_type='azure',
+            api_version='2023-05-15'
+        )
+    elif args.client_type == 'anthropic':
+        client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
+    elif args.client_type == 'vllm':
+        client = OpenAI(
+            api_key=args.api_key or "EMPTY",
+            base_url=args.api_base or "http://localhost:8000/v1"
+        )
+    else:
+        raise ValueError(f"Unsupported client type: {args.client_type}")
+    
+    # Load input data
+    with open(args.input_file, 'r') as f:
+        data_list = json.load(f)
+    
+    # Process data
+    results = []
+    
+    # Determine data type and use appropriate evaluation function
+    if isinstance(data_list, list) and len(data_list) > 0:
+        sample_data = data_list[0]
+        
+        if 'image_nums_in_input' in sample_data:
+            # Multi-image or video data
+            if 'video' in args.input_file.lower():
+                results = evaluate_video_with_cleanup(args, data_list, client)
+            else:
+                results = evaluate_multi_images_with_cleanup(args, data_list, client)
+        else:
+            # Single image data
+            results = evaluate_batch_with_cleanup(args, data_list, client)
+    else:
+        print("Invalid input data format")
+        return
+    
+    # Save results
+    output_data = []
+    for i, (data, (messages, response)) in enumerate(zip(data_list, results)):
+        output_item = {
+            'id': data.get('id', i),
+            'question': data['question'],
+            'response': response,
+            'messages': messages,
+            'image_paths': data.get('image_path_list', [])
+        }
+        
+        # Add ground truth if available
+        if 'answer' in data:
+            output_item['ground_truth'] = data['answer']
+        
+        output_data.append(output_item)
+    
+    # Write output
+    with open(args.output_file, 'w') as f:
+        json.dump(output_data, f, indent=2, ensure_ascii=False)
+    
+    print(f"Results saved to {args.output_file}")
+
+
+def run_single_example(question, image_paths, args_dict, client=None):
+    """
+    Convenience function to run a single example programmatically
+    
+    Args:
+        question: The question to ask
+        image_paths: List of image file paths
+        args_dict: Dictionary containing configuration (prompt_template, prompt, exe_code, etc.)
+        client: Pre-initialized client (optional)
+    
+    Returns:
+        tuple: (messages, response)
+    """
+    # Convert args_dict to namespace for compatibility
+    class Args:
+        pass
+    
+    args = Args()
+    for key, value in args_dict.items():
+        setattr(args, key, value)
+    
+    # Initialize client if not provided
+    if client is None:
+        if args.client_type == 'openai':
+            client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
+        elif args.client_type == 'anthropic':
+            client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
+        else:
+            raise ValueError(f"Unsupported client type: {args.client_type}")
+    
+    # Prepare data
+    data = {
+        'question': question,
+        'image_path_list': image_paths if isinstance(image_paths, list) else [image_paths]
+    }
+    
+    # Run evaluation
+    return evaluate_single_with_cleanup(args, data, client)
+
+
+# Example usage function
+def example_usage():
+    """Example of how to use the inference functions"""
+    
+    # Configuration
+    args_dict = {
+        'prompt_template': 'path/to/prompt_template.json',
+        'prompt': 'vistool_with_img_info_v2',
+        'exe_code': True,
+        'max_tokens': 10000,
+        'temperature': 0.6,
+        'api_name': 'gpt-4-vision-preview',
+        'client_type': 'openai',
+        'api_key': None  # Will use environment variable
+    }
+    
+    # Single image example
+    question = "What objects can you see in this image?"
+    image_path = "path/to/image.jpg"
+    
+    messages, response = run_single_example(question, image_path, args_dict)
+    print(f"Response: {response}")
+    
+    # Multi-image example
+    question_multi = "What are the differences between these images?"
+    image_paths = ["path/to/image1.jpg", "path/to/image2.jpg"]
+    
+    messages_multi, response_multi = run_single_example(question_multi, image_paths, args_dict)
+    print(f"Multi-image response: {response_multi}")
+
+
+if __name__ == "__main__":
+    # Check if running as script with arguments
+    if len(sys.argv) > 1:
+        main()
+    else:
+        # Run example if no arguments provided
+        print("No arguments provided. Running example usage...")
+        print("For command-line usage, run with --help flag")
+        # example_usage()  # Uncomment to run example
