@@ -1,6 +1,6 @@
 {
-    "api_key": [
-        "sk-xxx"
+    "azure_openai_api_key": [
+        "xxx"
     ],
-    "base_url": "xxx"
+    "azure_openai_endpoint": "xxx"
 }

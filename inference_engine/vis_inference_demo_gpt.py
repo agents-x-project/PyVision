@@ -1,5 +1,3 @@
-# vis_inference_demo_gpt.py
-
 import sys
 import os
 import re
@@ -92,7 +90,7 @@ def check(evaluator, pred_ans, real_ans):
     correctness = evaluator.score(pred_ans, real_ans)
     return correctness
 
-def excute_codes(codes, messages, executor: PythonExecutor):
+def execute_codes(codes, messages, executor: PythonExecutor):
     no_code_idx = []
     codes_use = []
     for i, code in enumerate(codes):
@@ -326,7 +324,7 @@ def process_prompt_init_multi_images(question, image_path_list, prompt_template,
             return messages
 
 
-def update_messages_with_excu_content(image_nums_in_input, messages, images_result, text_result, error_result, image_clue_idx):
+def update_messages_with_execute_content(image_nums_in_input, messages, images_result, text_result, error_result, image_clue_idx):
     if error_result is None:
         new_messages = []
         image_content = []
@@ -426,7 +424,7 @@ def call_chatgpt_api(args, messages, client, max_tokens=10000, stop=None, temper
         print("Your args.client_type must be one of openai, azure, anthropic and vllm.")
         return None, None
     
-    # 检查是否遇到停止标记
+    # Check if stop sequence is encountered
     stop_reason = None
     if stop and any(s in response_text for s in stop):
         for s in stop:
@@ -475,7 +473,7 @@ def evaluate_single_data(args, data, client, executor):
             prompt = "vistool_with_img_info_multi_image"
             messages = process_prompt_init_multi_images(data["question"], image_path_list, prompt_template, prompt, api_name)
     
-    # 生成初始响应
+    # Generate initial response
     response_text, pred_stop_reason = call_chatgpt_api(
         args,
         messages, 
@@ -485,20 +483,20 @@ def evaluate_single_data(args, data, client, executor):
         temperature=temperature
     )
     
-    # 处理响应
+    # Handle response
     final_response = response_text
     code_execution_count = 0
     image_clue_idx = len(image_path_list)
     
     while True:
-        # 检查是否需要执行代码
+        # Check if code execution is needed
         if exe_code and pred_stop_reason == "</code>":
-            # 提取要执行的代码
+            # Extract code to execute
             messages = update_messages_with_code(messages, response_text)
             code_to_execute = response_text.split("```python")[-1].split("```")[0].strip()
             
-            # 执行代码
-            exe_result = excute_codes([code_to_execute], messages, executor)[0][0]
+            # Execute code
+            exe_result = execute_codes([code_to_execute], messages, executor)[0][0]
             if exe_result is None:
                 text_result = "None"
                 images_result = None
@@ -521,12 +519,12 @@ def evaluate_single_data(args, data, client, executor):
                     text_result = None
                     images_result = None
 
-            messages, new_image_clue_idx = update_messages_with_excu_content(len(image_path_list), messages, images_result, text_result, error_result, image_clue_idx)
+            messages, new_image_clue_idx = update_messages_with_execute_content(len(image_path_list), messages, images_result, text_result, error_result, image_clue_idx)
             image_clue_idx = new_image_clue_idx
             
             code_execution_count += 1
             
-            # 生成下一部分响应
+            # Generate next response part
             response_text, pred_stop_reason = call_chatgpt_api(
                 args,
                 messages, 
@@ -558,7 +556,7 @@ def evaluate_single_data_multi_images(args, data, client, executor):
 
     messages = process_prompt_init_multi_images(data["question"], data['image_path_list'], prompt_template, prompt)
     
-    # 生成初始响应
+    # Generate initial response
     response_text, pred_stop_reason = call_chatgpt_api(
         args,
         messages, 
@@ -567,20 +565,20 @@ def evaluate_single_data_multi_images(args, data, client, executor):
         stop=["</code>"] if exe_code else None
     )
     
-    # 处理响应
+    # Handle response
     final_response = response_text
     code_execution_count = 0
     image_clue_idx = data['image_nums_in_input']
     
     while True:
-        # 检查是否需要执行代码
+        # Check if code execution is needed
         if exe_code and pred_stop_reason == "</code>":
-            # 提取要执行的代码
+            # Extract code to execute
             messages = update_messages_with_code(messages, response_text)
             code_to_execute = response_text.split("```python")[-1].split("```")[0].strip()
             
-            # 执行代码
-            exe_result = excute_codes([code_to_execute], messages, executor)[0][0]
+            # Execute code
+            exe_result = execute_codes([code_to_execute], messages, executor)[0][0]
             if exe_result is None:
                 text_result = "None"
                 images_result = None
@@ -603,12 +601,12 @@ def evaluate_single_data_multi_images(args, data, client, executor):
                     text_result = None
                     images_result = None
 
-            messages, new_image_clue_idx = update_messages_with_excu_content(data['image_nums_in_input'], messages, images_result, text_result, error_result, image_clue_idx)
+            messages, new_image_clue_idx = update_messages_with_execute_content(data['image_nums_in_input'], messages, images_result, text_result, error_result, image_clue_idx)
             image_clue_idx = new_image_clue_idx
             
             code_execution_count += 1
             
-            # 生成下一部分响应
+            # Generate next response part
             response_text, pred_stop_reason = call_chatgpt_api(
                 args,
                 messages, 
@@ -638,7 +636,7 @@ def evaluate_single_data_video(args, data, client, executor):
 
     messages = process_prompt_init_multi_images(data["question"], data['image_path_list'], prompt_template, prompt)
     
-    # 生成初始响应
+    # Generate initial response
     response_text, pred_stop_reason = call_chatgpt_api(
         args,
         messages, 
@@ -647,20 +645,20 @@ def evaluate_single_data_video(args, data, client, executor):
         stop=["</code>"] if exe_code else None
     )
     
-    # 处理响应
+    # Handle response
     final_response = response_text
     code_execution_count = 0
     image_clue_idx = data['image_nums_in_input']
     
     while True:
-        # 检查是否需要执行代码
+        # Check if code execution is needed
         if exe_code and pred_stop_reason == "</code>":
-            # 提取要执行的代码
+            # Extract code to execute
             messages = update_messages_with_code(messages, response_text)
             code_to_execute = response_text.split("```python")[-1].split("```")[0].strip()
             
-            # 执行代码
-            exe_result = excute_codes([code_to_execute], messages, executor)[0][0]
+            # Execute code
+            exe_result = execute_codes([code_to_execute], messages, executor)[0][0]
             if exe_result is None:
                 text_result = "None"
                 images_result = None
@@ -683,12 +681,12 @@ def evaluate_single_data_video(args, data, client, executor):
                     text_result = None
                     images_result = None
 
-            messages, new_image_clue_idx = update_messages_with_excu_content(data['image_nums_in_input'], messages, images_result, text_result, error_result, image_clue_idx)
+            messages, new_image_clue_idx = update_messages_with_execute_content(data['image_nums_in_input'], messages, images_result, text_result, error_result, image_clue_idx)
             image_clue_idx = new_image_clue_idx
             
             code_execution_count += 1
             
-            # 生成下一部分响应
+            # Generate next response part
             response_text, pred_stop_reason = call_chatgpt_api(
                 args,
                 messages, 
@@ -783,192 +781,3 @@ def evaluate_video_with_cleanup(args, data_list, client):
     finally:
         # Ensure cleanup of persistent worker
         del executor
-
-
-# # Main execution functions
-# def main():
-#     """Main function for command-line execution"""
-#     parser = argparse.ArgumentParser(description='Visual Inference Demo with GPT')
-    
-#     # Model arguments
-#     parser.add_argument('--api_name', type=str, default='gpt-4-vision-preview',
-#                         help='API model name')
-#     parser.add_argument('--client_type', type=str, choices=['openai', 'azure', 'anthropic', 'vllm'],
-#                         default='openai', help='Type of client to use')
-    
-#     # Prompt arguments
-#     parser.add_argument('--prompt_template', type=str, required=True,
-#                         help='Path to prompt template JSON file')
-#     parser.add_argument('--prompt', type=str, default='vistool_with_img_info_v2',
-#                         help='Prompt type to use from template')
-    
-#     # Execution arguments
-#     parser.add_argument('--exe_code', action='store_true',
-#                         help='Whether to execute code blocks')
-#     parser.add_argument('--max_tokens', type=int, default=10000,
-#                         help='Maximum tokens for API response')
-#     parser.add_argument('--temperature', type=float, default=0.6,
-#                         help='Temperature for API generation')
-    
-#     # Input/Output arguments
-#     parser.add_argument('--input_file', type=str, required=True,
-#                         help='Path to input JSON file with questions and images')
-#     parser.add_argument('--output_file', type=str, required=True,
-#                         help='Path to save results')
-    
-#     # API keys (can also be set via environment variables)
-#     parser.add_argument('--api_key', type=str, default=None,
-#                         help='API key (defaults to environment variable)')
-#     parser.add_argument('--api_base', type=str, default=None,
-#                         help='API base URL for Azure or custom endpoints')
-    
-#     args = parser.parse_args()
-    
-#     # Initialize client
-#     if args.client_type == 'openai':
-#         client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
-#     elif args.client_type == 'azure':
-#         client = OpenAI(
-#             api_key=args.api_key or os.getenv('AZURE_API_KEY'),
-#             api_base=args.api_base or os.getenv('AZURE_API_BASE'),
-#             api_type='azure',
-#             api_version='2023-05-15'
-#         )
-#     elif args.client_type == 'anthropic':
-#         client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
-#     elif args.client_type == 'vllm':
-#         client = OpenAI(
-#             api_key=args.api_key or "EMPTY",
-#             base_url=args.api_base or "http://localhost:8000/v1"
-#         )
-#     else:
-#         raise ValueError(f"Unsupported client type: {args.client_type}")
-    
-#     # Load input data
-#     with open(args.input_file, 'r') as f:
-#         data_list = json.load(f)
-    
-#     # Process data
-#     results = []
-    
-#     # Determine data type and use appropriate evaluation function
-#     if isinstance(data_list, list) and len(data_list) > 0:
-#         sample_data = data_list[0]
-        
-#         if 'image_nums_in_input' in sample_data:
-#             # Multi-image or video data
-#             if 'video' in args.input_file.lower():
-#                 results = evaluate_video_with_cleanup(args, data_list, client)
-#             else:
-#                 results = evaluate_multi_images_with_cleanup(args, data_list, client)
-#         else:
-#             # Single image data
-#             results = evaluate_batch_with_cleanup(args, data_list, client)
-#     else:
-#         print("Invalid input data format")
-#         return
-    
-#     # Save results
-#     output_data = []
-#     for i, (data, (messages, response)) in enumerate(zip(data_list, results)):
-#         output_item = {
-#             'id': data.get('id', i),
-#             'question': data['question'],
-#             'response': response,
-#             'messages': messages,
-#             'image_paths': data.get('image_path_list', [])
-#         }
-        
-#         # Add ground truth if available
-#         if 'answer' in data:
-#             output_item['ground_truth'] = data['answer']
-        
-#         output_data.append(output_item)
-    
-#     # Write output
-#     with open(args.output_file, 'w') as f:
-#         json.dump(output_data, f, indent=2, ensure_ascii=False)
-    
-#     print(f"Results saved to {args.output_file}")
-
-
-# def run_single_example(question, image_paths, args_dict, client=None):
-#     """
-#     Convenience function to run a single example programmatically
-    
-#     Args:
-#         question: The question to ask
-#         image_paths: List of image file paths
-#         args_dict: Dictionary containing configuration (prompt_template, prompt, exe_code, etc.)
-#         client: Pre-initialized client (optional)
-    
-#     Returns:
-#         tuple: (messages, response)
-#     """
-#     # Convert args_dict to namespace for compatibility
-#     class Args:
-#         pass
-    
-#     args = Args()
-#     for key, value in args_dict.items():
-#         setattr(args, key, value)
-    
-#     # Initialize client if not provided
-#     if client is None:
-#         if args.client_type == 'openai':
-#             client = OpenAI(api_key=args.api_key or os.getenv('OPENAI_API_KEY'))
-#         elif args.client_type == 'anthropic':
-#             client = anthropic.Anthropic(api_key=args.api_key or os.getenv('ANTHROPIC_API_KEY'))
-#         else:
-#             raise ValueError(f"Unsupported client type: {args.client_type}")
-    
-#     # Prepare data
-#     data = {
-#         'question': question,
-#         'image_path_list': image_paths if isinstance(image_paths, list) else [image_paths]
-#     }
-    
-#     # Run evaluation
-#     return evaluate_single_with_cleanup(args, data, client)
-
-
-# # Example usage function
-# def example_usage():
-#     """Example of how to use the inference functions"""
-    
-#     # Configuration
-#     args_dict = {
-#         'prompt_template': 'path/to/prompt_template.json',
-#         'prompt': 'vistool_with_img_info_v2',
-#         'exe_code': True,
-#         'max_tokens': 10000,
-#         'temperature': 0.6,
-#         'api_name': 'gpt-4-vision-preview',
-#         'client_type': 'openai',
-#         'api_key': None  # Will use environment variable
-#     }
-    
-#     # Single image example
-#     question = "What objects can you see in this image?"
-#     image_path = "path/to/image.jpg"
-    
-#     messages, response = run_single_example(question, image_path, args_dict)
-#     print(f"Response: {response}")
-    
-#     # Multi-image example
-#     question_multi = "What are the differences between these images?"
-#     image_paths = ["path/to/image1.jpg", "path/to/image2.jpg"]
-    
-#     messages_multi, response_multi = run_single_example(question_multi, image_paths, args_dict)
-#     print(f"Multi-image response: {response_multi}")
-
-
-# if __name__ == "__main__":
-#     # Check if running as script with arguments
-#     if len(sys.argv) > 1:
-#         main()
-#     else:
-#         # Run example if no arguments provided
-#         print("No arguments provided. Running example usage...")
-#         print("For command-line usage, run with --help flag")
-#         # example_usage()  # Uncomment to run example

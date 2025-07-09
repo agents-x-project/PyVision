@@ -535,12 +535,3 @@ class PythonExecutor:
         """Clean up resources."""
         if self.persistent_worker:
             self.persistent_worker.terminate()
-
-
-def _test():
-    # ... (rest of the test code remains the same)
-    pass
-
-
-if __name__ == "__main__":
-    _test()

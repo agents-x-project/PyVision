@@ -10,7 +10,7 @@
 <a href="https://agent-x.space/" target="_blank">
     <img alt="Website" src="https://img.shields.io/badge/🌎_Homepage-blue.svg" height="20" />
 </a>
-<a href="https://huggingface.co/spaces/Agents-X/PyVision-fully-isolated" target="_blank">
+<a href="https://huggingface.co/spaces/Agents-X/PyVision" target="_blank">
     <img alt="HF Model: ViGaL" src="https://img.shields.io/badge/%F0%9F%A4%97%20_Demo-PyVision-ffc107?color=ffc107&logoColor=white" height="20" />
 </a>
 
@@ -61,10 +61,10 @@ Before running `PyVision`, you need to first setup the API config file, includin
 ```bash
 # ./api_config_files/api_config_azure.json
 {
-    "api_key": [
-        "sk-xxx"
+    "azure_openai_api_key": [
+        "xxx"
     ],
-    "base_url": "xxx"
+    "azure_openai_endpoint": "xxx"
 }
 ```
 #### vLLM Client 
@@ -72,7 +72,7 @@ Before running `PyVision`, you need to first setup the API config file, includin
 # ./api_config_files/api_config_vllm.json
 {
     "api_key": [
-        "sk-xxx"
+        "xxx"
     ],
     "base_url": "xxx"
 }
@@ -84,7 +84,7 @@ If you have setup the OpenAI API config file, you can run the `run.sh` file.
 
 python main.py \
     --image_path ./test_data/one_image_demo.png \
-    --question "From the information on that advertising board, what is the type of this shop?" \
+    --question "What is the color of the liquid contained in the glass on the table?" \
     --api_config ./api_config_files/api_config_openai.json \
     --client_type openai \
     --prompt_template ./prompt_template/prompt_template_vis.json \

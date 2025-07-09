@@ -2,7 +2,7 @@
 
 python main.py \
     --image_path ./test_data/one_image_demo.png \
-    --question "From the information on that advertising board, what is the type of this shop?" \
+    --question "What is the color of the liquid contained in the glass on the table?" \
     --api_config ./api_config_files/api_config_openai.json \
     --client_type openai \
     --prompt_template ./prompt_template/prompt_template_vis.json \
@@ -17,7 +17,7 @@ python main.py \
 
 # python main.py \
 #     --image_path ./test_data/one_image_demo.png \
-#     --question From the information on that advertising board, what is the type of this shop? \
+#     --question What is the color of the liquid contained in the glass on the table? \
 #     --api_config ./api_config_files/api_config_azure.json \
 #     --client_type azure \
 #     --prompt_template ./prompt_template/prompt_template_vis.json \
@@ -32,7 +32,7 @@ python main.py \
 
 # python main.py \
 #     --image_path ./test_data/one_image_demo.png \
-#     --question From the information on that advertising board, what is the type of this shop? \
+#     --question What is the color of the liquid contained in the glass on the table? \
 #     --api_config ./api_config_files/api_config_vllm.json \
 #     --client_type vllm \
 #     --prompt_template ./prompt_template/prompt_template_vis.json \
