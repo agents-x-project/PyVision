@@ -4,7 +4,7 @@
 
 
 
-<a href="https://arxiv.org/abs/2506.08011" target="_blank">
+<a href="https://arxiv.org/abs/2507.07998" target="_blank">
     <img alt="arXiv" src="https://img.shields.io/badge/arXiv-PyVision-red?logo=arxiv" height="20" />
 </a>
 <a href="https://agent-x.space/" target="_blank">
