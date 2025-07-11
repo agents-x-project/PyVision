@@ -23,7 +23,7 @@ LLMs are increasingly deployed as agents, systems capable of planning, reasoning
 
 ## 🚩News
 - [2025-7-8] 🚀🚀🚀 We are excited to release `PyVision`, inluding:
-  - [Techniqual report](), code and [online demo](https://huggingface.co/spaces/Agents-X/PyVision-fully-isolated).
+  - [Techniqual report](https://arxiv.org/abs/2507.07998), code and [online demo](https://huggingface.co/spaces/Agents-X/PyVision).
 
 ## 📋Contents
 - [Intallation](#installation)
