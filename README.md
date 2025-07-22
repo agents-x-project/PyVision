@@ -104,7 +104,7 @@ Upload the message file to our hosted visualization HuggingFace space: [visualiz
 ```bibtex
 @article{zhao2025pyvision,
   title={PyVision: Agentic Vision with Dynamic Tooling.},
-  author={Zhao, Shitian and zhang, Haoquan and Lin, Shaoheng and Li, Ming and Wu, Qilong and Zhang, Kaipeng and Wei, Chen},
+  author={Zhao, Shitian and Zhang, Haoquan and Lin, Shaoheng and Li, Ming and Wu, Qilong and Zhang, Kaipeng and Wei, Chen},
   journal={arxiv preprint arxiv:2507.07998},
   year={2025},
 }
